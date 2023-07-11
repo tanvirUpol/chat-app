@@ -10,10 +10,12 @@ import {
 } from "firebase/firestore";
 import MyBuble from "./MyBuble";
 import OtherBuble from "./OtherBuble";
+import Loading from "./Loading";
 
 const Chat = () => {
   const [message, setMessage] = useState("");
   const [data, setData] = useState([]);
+  const [pending, setPending] = useState(false);
   const ref = collection(db, "chat");
   const messagesEndRef = useRef();
 
@@ -25,7 +27,9 @@ const Chat = () => {
     scrolltoBottom();
   }, [data]);
 
+  // get data
   useEffect(() => {
+    setPending(true);
     const queryMessages = query(ref, orderBy("createdAt"));
     const unsub = onSnapshot(queryMessages, (snapshot) => {
       let fetchedMessages = [];
@@ -33,11 +37,13 @@ const Chat = () => {
         fetchedMessages.push({ ...doc.data(), id: doc.id });
       });
       setData(fetchedMessages);
+      setPending(false);
     });
 
     return () => unsub();
   }, []);
 
+  // post data
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (message === "") {
@@ -52,6 +58,9 @@ const Chat = () => {
       createdAt: serverTimestamp(),
     });
   };
+  
+
+
 
   return (
     <div className="flex-1 sm:p-6 justify-end flex flex-col h-full">
@@ -59,7 +68,9 @@ const Chat = () => {
         id="messages"
         className=" flex flex-col space-y-4 p-3 overflow-y-auto"
       >
-        {data.length < 1 && (
+        {pending && <Loading/>}
+
+        {!pending && data.length < 1 && (
           <p className="text-lg text-center">🥺 No Messages</p>
         )}
         {data &&
